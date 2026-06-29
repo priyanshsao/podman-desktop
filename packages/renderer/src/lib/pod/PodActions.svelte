@@ -49,6 +49,9 @@ const openingUrls = $derived(urls);
 
 const portRegexp = RegExp(/:(\d+)/);
 
+const hasPaused: boolean = pod.containers.some(c => c.Status === 'paused');
+const hasExited: boolean = pod.containers.some(c => c.Status === 'exited');
+
 function extractPort(urlString: string): number | undefined {
   const match = portRegexp.exec(urlString);
   return match ? parseInt(match[1], 10) : undefined;
@@ -98,6 +101,17 @@ async function startPod(): Promise<void> {
   }
 }
 
+async function unpausePod(): Promise<void> {
+  inProgress(true, 'STARTING');
+  try {
+    await window.unpausePod(pod.engineId, pod.id);
+  } catch (error) {
+    handleError(String(error));
+  } finally {
+    inProgress(false);
+  }
+}
+
 async function restartPod(): Promise<void> {
   inProgress(false, 'RESTARTING');
   try {
@@ -131,6 +145,11 @@ async function deletePod(): Promise<void> {
   }
 }
 
+async function unpauseAndStartPod(): Promise<void> {
+  await unpausePod();
+  await startPod();
+}
+
 function openGenerateKube(): void {
   router.goto(`/pods/podman/${encodeURI(pod.name)}/${encodeURIComponent(pod.engineId)}/kube`);
 }
@@ -145,7 +164,7 @@ const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
 
 <ListItemButtonIcon
   title="Start Pod"
-  onClick={startPod}
+  onClick={hasPaused ? hasExited ? unpauseAndStartPod : unpausePod : startPod}
   hidden={pod.status === 'RUNNING' || pod.status === 'STOPPING'}
   detailed={detailed}
   inProgress={pod.actionInProgress && pod.status === 'STARTING'}
