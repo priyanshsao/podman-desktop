@@ -1013,6 +1013,12 @@ export class PluginSystem {
       },
     );
     this.ipcHandle(
+      'container-provider-registry:unpausePod',
+      async (_listener, engine: string, podId: string): Promise<void> => {
+        return containerProviderRegistry.unpausePod(engine, podId);
+      },
+    );
+    this.ipcHandle(
       'container-provider-registry:restartPod',
       async (_listener, engine: string, podId: string): Promise<void> => {
         return containerProviderRegistry.restartPod(engine, podId);
